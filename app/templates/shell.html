@@ -55,9 +55,13 @@
             }, 300);
 
             try {
+                const headers = { 'Content-Type': 'application/json' };
+                if (window.__API_SECRET__) {
+                    headers['Authorization'] = 'Bearer ' + window.__API_SECRET__;
+                }
                 const response = await fetch('/api/generate', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({
                         path: getPagePath(),
                         prompt: prompt,
