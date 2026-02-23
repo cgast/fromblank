@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>fromblank</title>
+    <link rel="stylesheet" href="/static/shell.css">
+</head>
+<body>
+    <div id="blank-state">
+        <form id="create-form">
+            <input
+                type="text"
+                id="prompt-input"
+                placeholder="Describe the page you want to create..."
+                autocomplete="off"
+                autofocus
+            >
+        </form>
+    </div>
+
+    <div id="building-indicator" class="hidden">
+        <div class="building-content">
+            <div class="spinner"></div>
+            <p>Building your page...</p>
+        </div>
+    </div>
+
+    <div id="page-container" class="hidden"></div>
+
+    <script>
+        const form = document.getElementById('create-form');
+        const input = document.getElementById('prompt-input');
+        const blankState = document.getElementById('blank-state');
+        const buildingIndicator = document.getElementById('building-indicator');
+        const pageContainer = document.getElementById('page-container');
+
+        // Determine the path: use the current pathname
+        function getPagePath() {
+            let path = window.location.pathname;
+            if (path === '/') path = '/index';
+            return path;
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const prompt = input.value.trim();
+            if (!prompt) return;
+
+            // Fade out input, show building indicator
+            blankState.classList.add('fade-out');
+            setTimeout(() => {
+                blankState.classList.add('hidden');
+                buildingIndicator.classList.remove('hidden');
+            }, 300);
+
+            try {
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        path: getPagePath(),
+                        prompt: prompt,
+                        mode: 'create'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Generation failed: ${response.statusText}`);
+                }
+
+                // Stream the response
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let html = '';
+
+                buildingIndicator.classList.add('hidden');
+                pageContainer.classList.remove('hidden');
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    html += decoder.decode(value, { stream: true });
+                    pageContainer.innerHTML = html;
+                }
+
+                // Final render with complete HTML
+                html += decoder.decode();
+                renderGeneratedPage(html);
+
+            } catch (error) {
+                buildingIndicator.classList.add('hidden');
+                blankState.classList.remove('hidden', 'fade-out');
+                alert('Failed to generate page: ' + error.message);
+            }
+        });
+
+        function renderGeneratedPage(html) {
+            // Replace the entire document with the generated HTML
+            document.open();
+            document.write(html);
+            document.close();
+
+            // Update URL to remove any query params
+            const cleanUrl = window.location.pathname;
+            window.history.replaceState({}, '', cleanUrl);
+        }
+    </script>
+</body>
+</html>
