@@ -1,0 +1,17 @@
+services:
+  fromblank:
+    build: .
+    image: fromblank:latest
+    ports:
+      - "${PORT:-8000}:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:?Set ANTHROPIC_API_KEY in .env or environment}
+      - DATABASE_PATH=/app/data/pages.db
+      - PORT=8000
+      - HOST=0.0.0.0
+    volumes:
+      - fromblank-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  fromblank-data:
