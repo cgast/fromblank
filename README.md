@@ -38,16 +38,54 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 Visit `http://localhost:8000` to start building.
 
-### Docker
+### Docker Compose (recommended)
+
+```bash
+# Copy and fill in your API key
+cp .env.example .env
+
+# Start the service
+docker compose up -d
+```
+
+That's it. The app is running at `http://localhost:8000` with persistent data.
+
+### Docker (manual)
 
 ```bash
 docker build -t fromblank .
 
-docker run -p 8000:8000 \
+docker run -d -p 8000:8000 \
   -e ANTHROPIC_API_KEY=sk-ant-... \
   -v fromblank-data:/app/data \
+  --restart unless-stopped \
   fromblank
 ```
+
+### Pull from GitHub Container Registry
+
+Published images are available on every tagged release:
+
+```bash
+docker run -d -p 8000:8000 \
+  -e ANTHROPIC_API_KEY=sk-ant-... \
+  -v fromblank-data:/app/data \
+  --restart unless-stopped \
+  ghcr.io/OWNER/fromblank:latest
+```
+
+Replace `OWNER` with the GitHub user or org that owns the repository.
+
+## Releasing a new version
+
+Push a semver tag to trigger a Docker image build and GitHub release:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+This builds multi-arch images (amd64 + arm64), pushes to `ghcr.io`, and creates a GitHub release with auto-generated notes.
 
 ## Environment variables
 
